@@ -2,13 +2,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Sidebar, SidebarContent, SidebarGroup, SidebarGroupContent, SidebarGroupLabel, SidebarMenu, SidebarMenuButton, SidebarMenuItem, SidebarHeader, SidebarTrigger } from '@/components/ui/sidebar';
-import { Dashboard, Users, FileText, Receipt, Settings } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, Receipt, Settings } from 'lucide-react';
 
 const menuItems = [
   {
     title: "Dashboard",
     path: "/",
-    icon: Dashboard,
+    icon: LayoutDashboard,
   },
   {
     title: "Escritórios",
@@ -51,7 +51,7 @@ const AppSidebar: React.FC = () => {
             <SidebarMenu>
               {menuItems.map((item) => (
                 <SidebarMenuItem key={item.path}>
-                  <SidebarMenuButton asChild active={location.pathname === item.path}>
+                  <SidebarMenuButton asChild isActive={location.pathname === item.path}>
                     <Link to={item.path} className="flex items-center gap-3">
                       <item.icon className="h-5 w-5" />
                       <span>{item.title}</span>

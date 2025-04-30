@@ -8,7 +8,7 @@ import Dashboard from "./pages/Dashboard";
 import LawFirms from "./pages/LawFirms";
 import Contracts from "./pages/Contracts";
 import Invoices from "./pages/Invoices";
-import Settings from "./pages/Settings";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import AppLayout from "./components/layout/AppLayout";
 import { AppProvider } from './context/AppContext';
@@ -28,7 +28,7 @@ const App = () => (
               <Route path="/escritorios" element={<LawFirms />} />
               <Route path="/contratos" element={<Contracts />} />
               <Route path="/honorarios" element={<Invoices />} />
-              <Route path="/configuracoes" element={<Settings />} />
+              <Route path="/configuracoes" element={<SettingsPage />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </AppLayout>

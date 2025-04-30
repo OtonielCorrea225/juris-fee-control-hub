@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { Settings, Lock, User, Users } from 'lucide-react';
+import { Cog, Lock, User, Users } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 interface PermissionSetting {
@@ -15,7 +15,7 @@ interface PermissionSetting {
   user: boolean;
 }
 
-const Settings: React.FC = () => {
+const SettingsPage: React.FC = () => {
   const [permissions, setPermissions] = useState<PermissionSetting[]>([
     {
       id: 'manage_firms',
@@ -128,7 +128,7 @@ const Settings: React.FC = () => {
 
             <div className="flex justify-end pt-4">
               <Button onClick={handleSaveSettings}>
-                <Settings className="mr-2 h-4 w-4" />
+                <Cog className="mr-2 h-4 w-4" />
                 Salvar Configurações
               </Button>
             </div>
@@ -139,4 +139,4 @@ const Settings: React.FC = () => {
   );
 };
 
-export default Settings;
+export default SettingsPage;
