@@ -18,7 +18,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { formatCurrency } from '@/utils/formatters';
-import { LawFirm, Contract, Invoice, InvoiceStatus } from '@/types';
+import { LawFirm, Contract, Invoice, InvoiceStatus, Currency } from '@/types';
 import { DollarSign, ReceiptIcon, FileText, BriefcaseIcon } from 'lucide-react';
 import DollarFeesCard from '@/components/dashboard/DollarFeesCard';
 
@@ -51,19 +51,57 @@ const Dashboard: React.FC = () => {
   const totalByLawFirm = lawFirms
     .filter((firm) => firm.status === 'ativo')
     .map((firm) => {
-      const firmInvoices = invoices.filter((i) => i.lawFirmId === firm.id && i.status === 'pago');
-      const total = firmInvoices.reduce((sum, i) => sum + i.value, 0);
-      return {
-        name: firm.name.split(' ')[0],
-        value: total,
-      };
+      // Group invoices by currency
+      const firmInvoicesBRL = invoices.filter((i) => i.lawFirmId === firm.id && i.status === 'pago' && i.currency === 'BRL');
+      const firmInvoicesUSD = invoices.filter((i) => i.lawFirmId === firm.id && i.status === 'pago' && i.currency === 'USD');
+      
+      // Get totals by currency
+      const totalBRL = firmInvoicesBRL.reduce((sum, i) => sum + i.value, 0);
+      const totalUSD = firmInvoicesUSD.reduce((sum, i) => sum + i.value, 0);
+      
+      // Return separate entries for BRL and USD
+      const results = [];
+      if (totalBRL > 0) {
+        results.push({
+          name: `${firm.name.split(' ')[0]} (BRL)`,
+          value: totalBRL,
+          currency: 'BRL',
+        });
+      }
+      
+      if (totalUSD > 0) {
+        results.push({
+          name: `${firm.name.split(' ')[0]} (USD)`,
+          value: totalUSD,
+          currency: 'USD', 
+        });
+      }
+      
+      return results;
     })
+    .flat()
     .sort((a, b) => b.value - a.value)
     .slice(0, 5);
 
   const pendingInvoices = invoices
     .filter((invoice) => invoice.status === 'pendente')
     .sort((a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime());
+
+  // Custom tooltip formatter for the bar chart
+  const customBarTooltipFormatter = (value: number, name: string, props: any) => {
+    const item = props.payload;
+    if (item && item.currency) {
+      return [formatCurrency(value, item.currency), 'Total Pago'];
+    }
+    return [formatCurrency(value, 'BRL'), 'Total Pago'];
+  };
+
+  // Custom tick formatter for Y axis that respects currency
+  const customYAxisTickFormatter = (value: number) => {
+    // Since we can't determine currency from tick value alone, 
+    // we'll use a generic format that works for both BRL and USD
+    return value >= 1000 ? `${(value / 1000).toFixed(0)}k` : value.toString();
+  };
 
   return (
     <div className="space-y-6">
@@ -160,8 +198,8 @@ const Dashboard: React.FC = () => {
                 margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
               >
                 <XAxis dataKey="name" />
-                <YAxis tickFormatter={(value) => `R$ ${value / 1000}k`} />
-                <Tooltip formatter={(value) => [formatCurrency(value as number), 'Total Pago']} />
+                <YAxis tickFormatter={customYAxisTickFormatter} />
+                <Tooltip formatter={customBarTooltipFormatter} />
                 <Legend />
                 <Bar dataKey="value" name="Valor Pago" fill="#0088FE" />
               </BarChart>

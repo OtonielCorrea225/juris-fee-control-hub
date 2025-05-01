@@ -54,6 +54,7 @@ const Contracts: React.FC = () => {
       lawFirmId: '',
       serviceType: 'Consultivo',
       value: 0,
+      currency: 'BRL',
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       department: '',

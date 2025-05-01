@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,7 +48,14 @@ const LawFirms: React.FC = () => {
   const handleEditButtonClick = (id: string) => {
     const firm = lawFirms.find((firm) => firm.id === id);
     if (firm) {
-      setFormData({ ...firm });
+      setFormData({ 
+        name: firm.name,
+        document: firm.document,
+        email: firm.email,
+        phone: firm.phone,
+        area: firm.area,
+        status: firm.status
+      });
       setEditingFirm(id);
       setIsDialogOpen(true);
     }

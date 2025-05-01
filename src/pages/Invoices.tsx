@@ -7,26 +7,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/utils/formatters';
-import { Search, Receipt, Edit, Upload } from 'lucide-react';
 import { InvoiceStatus, Currency } from '@/types';
-import { Badge } from '@/components/ui/badge';
+import { Search, FilePlus, Edit, Trash2 } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCaption,
+  TableCell,
+  TableFooter,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
 
 const invoiceStatuses: InvoiceStatus[] = ['pendente', 'em análise', 'pago'];
 const currencies: Currency[] = ['BRL', 'USD'];
 
-const statusColors = {
-  'pendente': 'bg-yellow-100 text-yellow-800',
-  'em análise': 'bg-blue-100 text-blue-800',
-  'pago': 'bg-green-100 text-green-800',
-};
-
 const Invoices: React.FC = () => {
-  const { invoices, contracts, lawFirms, addInvoice, updateInvoice } = useAppContext();
+  const { invoices, lawFirms, contracts, addInvoice, updateInvoice } = useAppContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
-  const [currentDocument, setCurrentDocument] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingInvoice, setEditingInvoice] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  
   const [formData, setFormData] = useState({
     lawFirmId: '',
     contractId: '',
@@ -39,22 +43,21 @@ const Invoices: React.FC = () => {
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.type === 'number' 
-      ? parseFloat(e.target.value) || 0 
+    const value = e.target.type === 'number'
+      ? parseFloat(e.target.value) || 0
       : e.target.value;
-    
+
     setFormData({ ...formData, [e.target.name]: value });
   };
 
   const handleSelectChange = (name: string, value: string) => {
-    const newFormData = { ...formData, [name]: value };
-    
-    // If changing the lawFirmId, reset the contractId
-    if (name === 'lawFirmId') {
-      newFormData.contractId = '';
+    setFormData({ ...formData, [name]: value });
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      setSelectedFile(e.target.files[0]);
     }
-    
-    setFormData(newFormData);
   };
 
   const handleAddButtonClick = () => {
@@ -63,86 +66,76 @@ const Invoices: React.FC = () => {
       contractId: '',
       processNumber: '',
       value: 0,
+      currency: 'BRL',
       dueDate: new Date().toISOString().split('T')[0],
       status: 'pendente',
       documentUrl: '',
     });
     setEditingInvoice(null);
+    setSelectedFile(null);
     setIsDialogOpen(true);
   };
 
   const handleEditButtonClick = (id: string) => {
     const invoice = invoices.find((invoice) => invoice.id === id);
     if (invoice) {
-      setFormData({ 
-        ...invoice,
-        // Handle optional fields
-        processNumber: invoice.processNumber || '',
-        documentUrl: invoice.documentUrl || '',
-      });
+      setFormData({ ...invoice });
       setEditingInvoice(id);
       setIsDialogOpen(true);
     }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      // For this demo, we're not actually uploading the file, just storing its name
-      const fileName = e.target.files[0].name;
-      setFormData({ ...formData, documentUrl: fileName });
-    }
-  };
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (editingInvoice) {
-      updateInvoice(editingInvoice, formData);
+
+    if (selectedFile) {
+      // Simulate upload and get URL
+      const uploadURL = await uploadFile(selectedFile);
+      
+      if (editingInvoice) {
+        updateInvoice(editingInvoice, { ...formData, documentUrl: uploadURL });
+      } else {
+        addInvoice({ ...formData, documentUrl: uploadURL });
+      }
     } else {
-      addInvoice(formData);
+      if (editingInvoice) {
+        updateInvoice(editingInvoice, formData);
+      } else {
+        addInvoice(formData);
+      }
     }
+
     setIsDialogOpen(false);
   };
 
-  const handleViewDocument = (documentUrl: string) => {
-    setCurrentDocument(documentUrl);
-    setIsDocumentViewerOpen(true);
+  const uploadFile = async (file: File): Promise<string> => {
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve('https://example.com/uploaded/' + file.name);
+      }, 1000);
+    });
   };
-
-  const activeLawFirms = lawFirms.filter(firm => firm.status === 'ativo');
-  
-  const availableContracts = contracts.filter(contract => 
-    contract.lawFirmId === formData.lawFirmId
-  );
 
   const filteredInvoices = invoices.filter((invoice) => {
     const lawFirm = lawFirms.find((firm) => firm.id === invoice.lawFirmId);
     const contract = contracts.find((c) => c.id === invoice.contractId);
-    
-    if (!lawFirm) return false;
-    
+
+    if (!lawFirm || !contract) return false;
+
     return (
       lawFirm.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (invoice.processNumber && invoice.processNumber.includes(searchTerm)) ||
-      (contract && contract.serviceType.toLowerCase().includes(searchTerm.toLowerCase())) ||
-      invoice.status.includes(searchTerm.toLowerCase())
+      contract.serviceType.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.processNumber?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      invoice.status.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
-
-  const getStatusBadgeVariant = (status: InvoiceStatus) => {
-    switch (status) {
-      case 'pendente': return 'warning';
-      case 'em análise': return 'secondary';
-      case 'pago': return 'success';
-      default: return 'default';
-    }
-  };
 
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight">Honorários</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Faturas</h1>
         <Button onClick={handleAddButtonClick}>
-          <Receipt className="mr-2 h-4 w-4" />
+          <FilePlus className="mr-2 h-4 w-4" />
           Nova Fatura
         </Button>
       </div>
@@ -156,7 +149,7 @@ const Invoices: React.FC = () => {
             <div className="relative grow">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Buscar por escritório, número de processo ou status..."
+                placeholder="Buscar por escritório, contrato, número do processo ou status..."
                 className="pl-8"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
@@ -177,59 +170,48 @@ const Invoices: React.FC = () => {
             </p>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4">Escritório</th>
-                    <th className="text-left py-3 px-4">Processo Nº</th>
-                    <th className="text-left py-3 px-4">Valor</th>
-                    <th className="text-left py-3 px-4">Moeda</th>
-                    <th className="text-left py-3 px-4">Vencimento</th>
-                    <th className="text-left py-3 px-4">Status</th>
-                    <th className="text-left py-3 px-4">Documento</th>
-                    <th className="text-right py-3 px-4">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="text-left">Escritório</TableHead>
+                    <TableHead className="text-left">Contrato</TableHead>
+                    <TableHead className="text-left">Número do Processo</TableHead>
+                    <TableHead className="text-left">Valor</TableHead>
+                    <TableHead className="text-left">Moeda</TableHead>
+                    <TableHead className="text-left">Vencimento</TableHead>
+                    <TableHead className="text-left">Status</TableHead>
+                    <TableHead className="text-left">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
                   {filteredInvoices.map((invoice) => {
                     const lawFirm = lawFirms.find((firm) => firm.id === invoice.lawFirmId);
+                    const contract = contracts.find((c) => c.id === invoice.contractId);
+
                     return (
-                      <tr key={invoice.id} className="border-b hover:bg-muted/50">
-                        <td className="py-3 px-4 font-medium">{lawFirm?.name}</td>
-                        <td className="py-3 px-4">{invoice.processNumber || '-'}</td>
-                        <td className="py-3 px-4">{formatCurrency(invoice.value, invoice.currency)}</td>
-                        <td className="py-3 px-4">{invoice.currency}</td>
-                        <td className="py-3 px-4">{formatDate(invoice.dueDate)}</td>
-                        <td className="py-3 px-4">
-                          <Badge variant={getStatusBadgeVariant(invoice.status) as any}>
-                            {invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1)}
-                          </Badge>
-                        </td>
-                        <td className="py-3 px-4">
-                          {invoice.documentUrl ? (
-                            <Button variant="outline" size="sm" onClick={() => handleViewDocument(invoice.documentUrl!)}>
-                              <Upload className="h-3 w-3 mr-1" /> Ver
-                            </Button>
-                          ) : (
-                            <span className="text-muted-foreground">Não anexado</span>
-                          )}
-                        </td>
-                        <td className="py-3 px-4 text-right">
+                      <TableRow key={invoice.id}>
+                        <TableCell className="font-medium">{lawFirm?.name}</TableCell>
+                        <TableCell>{contract?.serviceType}</TableCell>
+                        <TableCell>{invoice.processNumber}</TableCell>
+                        <TableCell>{formatCurrency(invoice.value, invoice.currency)}</TableCell>
+                        <TableCell>{invoice.currency}</TableCell>
+                        <TableCell>{formatDate(invoice.dueDate)}</TableCell>
+                        <TableCell>{invoice.status}</TableCell>
+                        <TableCell className="text-right">
                           <Button variant="ghost" size="sm" onClick={() => handleEditButtonClick(invoice.id)}>
                             <Edit className="h-4 w-4" />
                           </Button>
-                        </td>
-                      </tr>
+                        </TableCell>
+                      </TableRow>
                     );
                   })}
-                </tbody>
-              </table>
+                </TableBody>
+              </Table>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Invoice Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -249,7 +231,7 @@ const Invoices: React.FC = () => {
                     <SelectValue placeholder="Selecione um escritório" />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeLawFirms.map((firm) => (
+                    {lawFirms.map((firm) => (
                       <SelectItem key={firm.id} value={firm.id}>{firm.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -260,28 +242,19 @@ const Invoices: React.FC = () => {
                 <Select
                   value={formData.contractId}
                   onValueChange={(value) => handleSelectChange('contractId', value)}
-                  disabled={!formData.lawFirmId}
                 >
                   <SelectTrigger id="contractId">
-                    <SelectValue placeholder={
-                      formData.lawFirmId 
-                        ? availableContracts.length 
-                          ? "Selecione um contrato" 
-                          : "Não há contratos para este escritório"
-                        : "Selecione um escritório primeiro"
-                    } />
+                    <SelectValue placeholder="Selecione um contrato" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableContracts.map((contract) => (
-                      <SelectItem key={contract.id} value={contract.id}>
-                        {`${contract.serviceType} - ${formatCurrency(contract.value, contract.currency)}`}
-                      </SelectItem>
+                    {contracts.map((contract) => (
+                      <SelectItem key={contract.id} value={contract.id}>{contract.serviceType}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="processNumber">Número do Processo (opcional)</Label>
+                <Label htmlFor="processNumber">Número do Processo</Label>
                 <Input
                   id="processNumber"
                   name="processNumber"
@@ -290,7 +263,7 @@ const Invoices: React.FC = () => {
                 />
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="value">Valor</Label>
+                <Label htmlFor="value">Valor da Fatura</Label>
                 <Input
                   id="value"
                   name="value"
@@ -329,39 +302,34 @@ const Invoices: React.FC = () => {
                   required
                 />
               </div>
-              {editingInvoice && (
-                <div className="grid gap-2">
-                  <Label htmlFor="status">Status</Label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value) => handleSelectChange('status', value)}
-                  >
-                    <SelectTrigger id="status">
-                      <SelectValue placeholder="Selecione o status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {invoiceStatuses.map((status) => (
-                        <SelectItem key={status} value={status}>
-                          {status.charAt(0).toUpperCase() + status.slice(1)}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
               <div className="grid gap-2">
-                <Label htmlFor="document">Documento / Fatura (opcional)</Label>
+                <Label htmlFor="status">Status</Label>
+                <Select
+                  value={formData.status}
+                  onValueChange={(value) => handleSelectChange('status', value)}
+                >
+                  <SelectTrigger id="status">
+                    <SelectValue placeholder="Selecione o status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {invoiceStatuses.map((status) => (
+                      <SelectItem key={status} value={status}>{status}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="document">Documento</Label>
                 <Input
                   id="document"
                   name="document"
                   type="file"
-                  accept=".pdf,.jpg,.jpeg,.png"
                   onChange={handleFileChange}
                 />
-                {formData.documentUrl && (
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Documento atual: {formData.documentUrl}
-                  </p>
+                {selectedFile && (
+                  <div className="mt-2">
+                    Arquivo selecionado: {selectedFile.name}
+                  </div>
                 )}
               </div>
             </div>
@@ -374,44 +342,6 @@ const Invoices: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
-
-      {/* Document Viewer Dialog */}
-      <Dialog open={isDocumentViewerOpen} onOpenChange={setIsDocumentViewerOpen}>
-        <DialogContent className="sm:max-w-[90%] h-[80vh]">
-          <DialogHeader>
-            <DialogTitle>Visualização do Documento</DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col items-center justify-center h-full">
-            {currentDocument && (
-              <>
-                {currentDocument.endsWith('.pdf') ? (
-                  <iframe 
-                    src={`data:application/pdf;base64,${currentDocument}`} 
-                    className="w-full h-full border rounded-md"
-                    title="Documento PDF"
-                  />
-                ) : (
-                  <div className="text-center p-8 flex flex-col items-center justify-center h-full">
-                    <img 
-                      src={currentDocument} 
-                      alt="Documento" 
-                      className="max-w-full max-h-[60vh] object-contain border rounded-md shadow-md" 
-                    />
-                    <p className="mt-4 text-muted-foreground">
-                      {currentDocument.split('/').pop()}
-                    </p>
-                  </div>
-                )}
-              </>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDocumentViewerOpen(false)}>
-              Fechar
-            </Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
