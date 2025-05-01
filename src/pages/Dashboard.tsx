@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,7 @@ import {
   ResponsiveContainer
 } from 'recharts';
 import { formatCurrency } from '@/utils/formatters';
-import { LawFirm, Contract, Invoice } from '@/types';
+import { LawFirm, Contract, Invoice, InvoiceStatus } from '@/types';
 import { DollarSign, ReceiptIcon, FileText, BriefcaseIcon } from 'lucide-react';
 import DollarFeesCard from '@/components/dashboard/DollarFeesCard';
 
@@ -32,8 +33,8 @@ const Dashboard: React.FC = () => {
   const { lawFirms, contracts, invoices, getTotalByCurrency } = useAppContext();
   
   const activeLawFirms = lawFirms.filter(firm => firm.status === 'ativo').length;
-  const activeContracts = contracts.length;
-  const pendingInvoices = invoices.filter(invoice => invoice.status === 'pendente').length;
+  const totalActiveContracts = contracts.length;
+  const totalPendingInvoices = invoices.filter(invoice => invoice.status === 'pendente').length;
   
   const totalPaid = getTotalByCurrency('BRL');
   
@@ -109,7 +110,7 @@ const Dashboard: React.FC = () => {
             <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{pendingInvoices}</div>
+            <div className="text-2xl font-bold">{totalPendingInvoices}</div>
             <p className="text-xs text-muted-foreground mt-1">
               Faturas aguardando pagamento
             </p>
@@ -196,7 +197,7 @@ const Dashboard: React.FC = () => {
                         <td className="py-3 px-4">
                           {new Date(invoice.dueDate).toLocaleDateString('pt-BR')}
                         </td>
-                        <td className="py-3 px-4">{formatCurrency(invoice.value)}</td>
+                        <td className="py-3 px-4">{formatCurrency(invoice.value, invoice.currency)}</td>
                         <td className="py-3 px-4">
                           <span 
                             className="px-2 py-1 rounded text-xs font-medium" 
