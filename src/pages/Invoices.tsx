@@ -23,6 +23,8 @@ const statusColors = {
 const Invoices: React.FC = () => {
   const { invoices, contracts, lawFirms, addInvoice, updateInvoice } = useAppContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDocumentViewerOpen, setIsDocumentViewerOpen] = useState(false);
+  const [currentDocument, setCurrentDocument] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingInvoice, setEditingInvoice] = useState<string | null>(null);
   const [formData, setFormData] = useState({
@@ -98,6 +100,11 @@ const Invoices: React.FC = () => {
       addInvoice(formData);
     }
     setIsDialogOpen(false);
+  };
+
+  const handleViewDocument = (documentUrl: string) => {
+    setCurrentDocument(documentUrl);
+    setIsDocumentViewerOpen(true);
   };
 
   const activeLawFirms = lawFirms.filter(firm => firm.status === 'ativo');
@@ -197,7 +204,7 @@ const Invoices: React.FC = () => {
                         </td>
                         <td className="py-3 px-4">
                           {invoice.documentUrl ? (
-                            <Button variant="outline" size="sm">
+                            <Button variant="outline" size="sm" onClick={() => handleViewDocument(invoice.documentUrl!)}>
                               <Upload className="h-3 w-3 mr-1" /> Ver
                             </Button>
                           ) : (
@@ -219,6 +226,7 @@ const Invoices: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Invoice Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -347,6 +355,44 @@ const Invoices: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={isDocumentViewerOpen} onOpenChange={setIsDocumentViewerOpen}>
+        <DialogContent className="sm:max-w-[90%] h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Visualização do Documento</DialogTitle>
+          </DialogHeader>
+          <div className="flex flex-col items-center justify-center h-full">
+            {currentDocument && (
+              <>
+                {currentDocument.endsWith('.pdf') ? (
+                  <iframe 
+                    src={`data:application/pdf;base64,${currentDocument}`} 
+                    className="w-full h-full border rounded-md"
+                    title="Documento PDF"
+                  />
+                ) : (
+                  <div className="text-center p-8 flex flex-col items-center justify-center h-full">
+                    <img 
+                      src={currentDocument} 
+                      alt="Documento" 
+                      className="max-w-full max-h-[60vh] object-contain border rounded-md shadow-md" 
+                    />
+                    <p className="mt-4 text-muted-foreground">
+                      {currentDocument.split('/').pop()}
+                    </p>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsDocumentViewerOpen(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
