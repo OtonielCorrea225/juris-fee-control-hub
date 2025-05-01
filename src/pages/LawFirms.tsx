@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCPFCNPJ } from '@/utils/formatters';
 import { Badge } from '@/components/ui/badge';
+import { LawFirmStatus } from '@/types';
 import { Search, UserPlus, Edit, CheckCircle, XCircle } from 'lucide-react';
 
 const LawFirms: React.FC = () => {
@@ -21,7 +23,7 @@ const LawFirms: React.FC = () => {
     email: '',
     phone: '',
     area: '',
-    status: 'ativo' as const,
+    status: 'ativo' as LawFirmStatus,
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { InvoiceStatus, Currency } from '@/types';
-import { Search, FilePlus, Edit, Trash2 } from 'lucide-react';
+import { Search, FilePlus, Edit, Trash2, Eye, FileText } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import {
   Table,
@@ -27,9 +28,11 @@ const currencies: Currency[] = ['BRL', 'USD'];
 const Invoices: React.FC = () => {
   const { invoices, lawFirms, contracts, addInvoice, updateInvoice } = useAppContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isDocViewerOpen, setIsDocViewerOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingInvoice, setEditingInvoice] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [currentDocUrl, setCurrentDocUrl] = useState<string | undefined>('');
   
   const [formData, setFormData] = useState({
     lawFirmId: '',
@@ -79,9 +82,32 @@ const Invoices: React.FC = () => {
   const handleEditButtonClick = (id: string) => {
     const invoice = invoices.find((invoice) => invoice.id === id);
     if (invoice) {
-      setFormData({ ...invoice });
+      setFormData({
+        lawFirmId: invoice.lawFirmId,
+        contractId: invoice.contractId,
+        processNumber: invoice.processNumber || '',
+        value: invoice.value,
+        currency: invoice.currency,
+        dueDate: invoice.dueDate,
+        status: invoice.status,
+        documentUrl: invoice.documentUrl || '',
+      });
       setEditingInvoice(id);
+      setSelectedFile(null);
       setIsDialogOpen(true);
+    }
+  };
+
+  const handleViewDocument = (url: string | undefined) => {
+    if (url) {
+      setCurrentDocUrl(url);
+      setIsDocViewerOpen(true);
+    } else {
+      toast({
+        title: "Sem documento",
+        description: "Esta fatura não possui documento anexado",
+        variant: "destructive"
+      });
     }
   };
 
@@ -114,6 +140,12 @@ const Invoices: React.FC = () => {
         resolve('https://example.com/uploaded/' + file.name);
       }, 1000);
     });
+  };
+
+  const getDocumentFileName = (url: string) => {
+    if (!url) return '';
+    const parts = url.split('/');
+    return parts[parts.length - 1];
   };
 
   const filteredInvoices = invoices.filter((invoice) => {
@@ -197,7 +229,10 @@ const Invoices: React.FC = () => {
                         <TableCell>{invoice.currency}</TableCell>
                         <TableCell>{formatDate(invoice.dueDate)}</TableCell>
                         <TableCell>{invoice.status}</TableCell>
-                        <TableCell className="text-right">
+                        <TableCell className="flex space-x-2">
+                          <Button variant="ghost" size="sm" onClick={() => handleViewDocument(invoice.documentUrl)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
                           <Button variant="ghost" size="sm" onClick={() => handleEditButtonClick(invoice.id)}>
                             <Edit className="h-4 w-4" />
                           </Button>
@@ -212,6 +247,7 @@ const Invoices: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -331,6 +367,12 @@ const Invoices: React.FC = () => {
                     Arquivo selecionado: {selectedFile.name}
                   </div>
                 )}
+                {!selectedFile && formData.documentUrl && (
+                  <div className="mt-2 flex items-center text-sm text-muted-foreground">
+                    <FileText className="h-4 w-4 mr-1" />
+                    Documento atual: {getDocumentFileName(formData.documentUrl)}
+                  </div>
+                )}
               </div>
             </div>
             <DialogFooter>
@@ -342,6 +384,47 @@ const Invoices: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={isDocViewerOpen} onOpenChange={setIsDocViewerOpen}>
+        <DialogContent className="sm:max-w-[800px] sm:h-[600px]">
+          <DialogHeader>
+            <DialogTitle>Visualizador de Documento</DialogTitle>
+          </DialogHeader>
+          <div className="h-full flex-1 overflow-auto">
+            {currentDocUrl && (
+              <div className="h-full">
+                {currentDocUrl.toLowerCase().endsWith('.pdf') ? (
+                  <iframe 
+                    src={currentDocUrl} 
+                    className="w-full h-full"
+                    title="PDF Document Viewer"
+                  />
+                ) : currentDocUrl.match(/\.(jpeg|jpg|gif|png)$/i) ? (
+                  <img 
+                    src={currentDocUrl} 
+                    alt="Document Preview" 
+                    className="max-w-full max-h-full mx-auto" 
+                  />
+                ) : (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <FileText className="h-16 w-16 mb-4 text-muted-foreground" />
+                    <p className="mb-4">Tipo de arquivo não suportado para visualização direta</p>
+                    <Button asChild>
+                      <a href={currentDocUrl} target="_blank" rel="noopener noreferrer">
+                        Baixar Arquivo
+                      </a>
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsDocViewerOpen(false)}>Fechar</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
