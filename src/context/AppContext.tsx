@@ -1,6 +1,5 @@
-
 import React, { createContext, useContext, useState } from 'react';
-import { LawFirm, Contract, Invoice } from '@/types';
+import { LawFirm, Contract, Invoice, Currency } from '@/types';
 import { mockLawFirms, mockContracts, mockInvoices } from '@/data/mockData';
 import { toast } from '@/hooks/use-toast';
 
@@ -20,14 +19,20 @@ interface AppContextType {
   getContractsByLawFirmId: (lawFirmId: string) => Contract[];
   getInvoicesByLawFirmId: (lawFirmId: string) => Invoice[];
   getInvoicesByContractId: (contractId: string) => Invoice[];
+  getTotalByCurrency: (currency: Currency) => number;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // Update initial state to include currency in mockData
   const [lawFirms, setLawFirms] = useState<LawFirm[]>(mockLawFirms);
-  const [contracts, setContracts] = useState<Contract[]>(mockContracts);
-  const [invoices, setInvoices] = useState<Invoice[]>(mockInvoices);
+  const [contracts, setContracts] = useState<Contract[]>(
+    mockContracts.map(contract => ({ ...contract, currency: contract.currency || 'BRL' }))
+  );
+  const [invoices, setInvoices] = useState<Invoice[]>(
+    mockInvoices.map(invoice => ({ ...invoice, currency: invoice.currency || 'BRL' }))
+  );
 
   const addLawFirm = (lawFirm: Omit<LawFirm, 'id'>) => {
     const newLawFirm = {
@@ -117,6 +122,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const getInvoicesByContractId = (contractId: string) => 
     invoices.filter((invoice) => invoice.contractId === contractId);
 
+  const getTotalByCurrency = (currency: Currency): number => {
+    return invoices
+      .filter(invoice => invoice.status === 'pago' && invoice.currency === currency)
+      .reduce((total, invoice) => total + invoice.value, 0);
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -135,6 +146,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         getContractsByLawFirmId,
         getInvoicesByLawFirmId,
         getInvoicesByContractId,
+        getTotalByCurrency,
       }}
     >
       {children}

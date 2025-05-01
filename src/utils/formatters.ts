@@ -1,5 +1,12 @@
 
-export const formatCurrency = (value: number): string => {
+export const formatCurrency = (value: number, currency: string = 'BRL'): string => {
+  if (currency === 'USD') {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+    }).format(value);
+  }
+  
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
     currency: 'BRL',

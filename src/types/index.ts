@@ -28,11 +28,14 @@ export type ContractType =
   | 'Societário' 
   | 'Outro';
 
+export type Currency = 'BRL' | 'USD';
+
 export interface Contract {
   id: string;
   lawFirmId: string;
   serviceType: ContractType;
   value: number;
+  currency: Currency;
   startDate: string;
   endDate: string;
   department: string;
@@ -46,6 +49,7 @@ export interface Invoice {
   contractId: string;
   processNumber?: string;
   value: number;
+  currency: Currency;
   dueDate: string;
   status: InvoiceStatus;
   documentUrl?: string;

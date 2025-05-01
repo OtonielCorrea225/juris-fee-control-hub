@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { Search, FileText, Edit } from 'lucide-react';
-import { ContractType } from '@/types';
+import { ContractType, Currency } from '@/types';
 
 const contractTypes: ContractType[] = [
   'Consultivo',
@@ -20,6 +20,8 @@ const contractTypes: ContractType[] = [
   'Outro'
 ];
 
+const currencies: Currency[] = ['BRL', 'USD'];
+
 const Contracts: React.FC = () => {
   const { contracts, lawFirms, addContract, updateContract } = useAppContext();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -29,6 +31,7 @@ const Contracts: React.FC = () => {
     lawFirmId: '',
     serviceType: 'Consultivo' as ContractType,
     value: 0,
+    currency: 'BRL' as Currency,
     startDate: '',
     endDate: '',
     department: '',
@@ -138,6 +141,7 @@ const Contracts: React.FC = () => {
                     <th className="text-left py-3 px-4">Escritório</th>
                     <th className="text-left py-3 px-4">Tipo de Serviço</th>
                     <th className="text-left py-3 px-4">Valor</th>
+                    <th className="text-left py-3 px-4">Moeda</th>
                     <th className="text-left py-3 px-4">Início</th>
                     <th className="text-left py-3 px-4">Término</th>
                     <th className="text-left py-3 px-4">Departamento</th>
@@ -151,7 +155,8 @@ const Contracts: React.FC = () => {
                       <tr key={contract.id} className="border-b hover:bg-muted/50">
                         <td className="py-3 px-4 font-medium">{lawFirm?.name}</td>
                         <td className="py-3 px-4">{contract.serviceType}</td>
-                        <td className="py-3 px-4">{formatCurrency(contract.value)}</td>
+                        <td className="py-3 px-4">{formatCurrency(contract.value, contract.currency)}</td>
+                        <td className="py-3 px-4">{contract.currency}</td>
                         <td className="py-3 px-4">{formatDate(contract.startDate)}</td>
                         <td className="py-3 px-4">{formatDate(contract.endDate)}</td>
                         <td className="py-3 px-4">{contract.department}</td>
@@ -223,6 +228,22 @@ const Contracts: React.FC = () => {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="currency">Moeda</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) => handleSelectChange('currency', value)}
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue placeholder="Selecione a moeda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((currency) => (
+                      <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="startDate">Data de Início</Label>

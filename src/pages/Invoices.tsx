@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,10 +8,11 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/utils/formatters';
 import { Search, Receipt, Edit, Upload } from 'lucide-react';
-import { InvoiceStatus } from '@/types';
+import { InvoiceStatus, Currency } from '@/types';
 import { Badge } from '@/components/ui/badge';
 
 const invoiceStatuses: InvoiceStatus[] = ['pendente', 'em análise', 'pago'];
+const currencies: Currency[] = ['BRL', 'USD'];
 
 const statusColors = {
   'pendente': 'bg-yellow-100 text-yellow-800',
@@ -32,6 +32,7 @@ const Invoices: React.FC = () => {
     contractId: '',
     processNumber: '',
     value: 0,
+    currency: 'BRL' as Currency,
     dueDate: '',
     status: 'pendente' as InvoiceStatus,
     documentUrl: '',
@@ -182,6 +183,7 @@ const Invoices: React.FC = () => {
                     <th className="text-left py-3 px-4">Escritório</th>
                     <th className="text-left py-3 px-4">Processo Nº</th>
                     <th className="text-left py-3 px-4">Valor</th>
+                    <th className="text-left py-3 px-4">Moeda</th>
                     <th className="text-left py-3 px-4">Vencimento</th>
                     <th className="text-left py-3 px-4">Status</th>
                     <th className="text-left py-3 px-4">Documento</th>
@@ -195,7 +197,8 @@ const Invoices: React.FC = () => {
                       <tr key={invoice.id} className="border-b hover:bg-muted/50">
                         <td className="py-3 px-4 font-medium">{lawFirm?.name}</td>
                         <td className="py-3 px-4">{invoice.processNumber || '-'}</td>
-                        <td className="py-3 px-4">{formatCurrency(invoice.value)}</td>
+                        <td className="py-3 px-4">{formatCurrency(invoice.value, invoice.currency)}</td>
+                        <td className="py-3 px-4">{invoice.currency}</td>
                         <td className="py-3 px-4">{formatDate(invoice.dueDate)}</td>
                         <td className="py-3 px-4">
                           <Badge variant={getStatusBadgeVariant(invoice.status) as any}>
@@ -271,7 +274,7 @@ const Invoices: React.FC = () => {
                   <SelectContent>
                     {availableContracts.map((contract) => (
                       <SelectItem key={contract.id} value={contract.id}>
-                        {`${contract.serviceType} - ${formatCurrency(contract.value)}`}
+                        {`${contract.serviceType} - ${formatCurrency(contract.value, contract.currency)}`}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -298,6 +301,22 @@ const Invoices: React.FC = () => {
                   onChange={handleInputChange}
                   required
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="currency">Moeda</Label>
+                <Select
+                  value={formData.currency}
+                  onValueChange={(value) => handleSelectChange('currency', value)}
+                >
+                  <SelectTrigger id="currency">
+                    <SelectValue placeholder="Selecione a moeda" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {currencies.map((currency) => (
+                      <SelectItem key={currency} value={currency}>{currency}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="dueDate">Data de Vencimento</Label>

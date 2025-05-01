@@ -1,10 +1,25 @@
-
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppContext } from '@/context/AppContext';
-import { PieChart, Pie, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ResponsiveContainer, Legend } from 'recharts';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ResponsiveContainer
+} from 'recharts';
 import { formatCurrency } from '@/utils/formatters';
-import { InvoiceStatus } from '@/types';
+import { LawFirm, Contract, Invoice } from '@/types';
+import { DollarSign, ReceiptIcon, FileText, BriefcaseIcon } from 'lucide-react';
+import DollarFeesCard from '@/components/dashboard/DollarFeesCard';
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28'];
 const STATUS_COLORS: Record<InvoiceStatus, string> = {
@@ -14,8 +29,14 @@ const STATUS_COLORS: Record<InvoiceStatus, string> = {
 };
 
 const Dashboard: React.FC = () => {
-  const { lawFirms, contracts, invoices } = useAppContext();
-
+  const { lawFirms, contracts, invoices, getTotalByCurrency } = useAppContext();
+  
+  const activeLawFirms = lawFirms.filter(firm => firm.status === 'ativo').length;
+  const activeContracts = contracts.length;
+  const pendingInvoices = invoices.filter(invoice => invoice.status === 'pendente').length;
+  
+  const totalPaid = getTotalByCurrency('BRL');
+  
   const totalInvoicesByStatus = [
     { name: 'Pendente', value: invoices.filter((i) => i.status === 'pendente').length },
     { name: 'Em Análise', value: invoices.filter((i) => i.status === 'em análise').length },
@@ -47,36 +68,51 @@ const Dashboard: React.FC = () => {
     <div className="space-y-6">
       <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Escritórios Cadastrados</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Honorários Pagos
+            </CardTitle>
+            <ReceiptIcon className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{lawFirms.filter(f => f.status === 'ativo').length}</div>
-            <p className="text-xs text-muted-foreground mt-1">Ativos de um total de {lawFirms.length}</p>
+            <div className="text-2xl font-bold">{formatCurrency(totalPaid)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Total de honorários pagos em BRL
+            </p>
+          </CardContent>
+        </Card>
+        
+        <DollarFeesCard />
+        
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Escritórios Ativos
+            </CardTitle>
+            <BriefcaseIcon className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{activeLawFirms}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Escritórios e advogados cadastrados
+            </p>
           </CardContent>
         </Card>
         
         <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Contratos Ativos</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">
+              Faturas Pendentes
+            </CardTitle>
+            <FileText className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-4xl font-bold">{activeContracts.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">De um total de {contracts.length}</p>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg">Honorários Pagos</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-4xl font-bold">
-              {formatCurrency(invoices.filter(i => i.status === 'pago').reduce((sum, i) => sum + i.value, 0))}
-            </div>
-            <p className="text-xs text-muted-foreground mt-1">Total de faturas pagas</p>
+            <div className="text-2xl font-bold">{pendingInvoices}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Faturas aguardando pagamento
+            </p>
           </CardContent>
         </Card>
       </div>
