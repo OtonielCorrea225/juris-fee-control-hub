@@ -67,7 +67,7 @@ const Login: React.FC = () => {
       <div className="w-full sm:w-96 flex flex-col items-center gap-8">
         <div className="text-center">
           <img 
-            src="/lovable-uploads/7fcdf5ee-98cd-4fa6-a127-03175d35d75f.png" 
+            src="/lovable-uploads/c3271ed9-f50b-474d-a45e-53c195fdfd8b.png" 
             alt="LegalPay Logo" 
             className="w-64 mx-auto"
           />
