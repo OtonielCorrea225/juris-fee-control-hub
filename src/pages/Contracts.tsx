@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAppContext } from '@/context/AppContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { formatCurrency, formatDate } from '@/utils/formatters';
-import { Search, FileText, Edit } from 'lucide-react';
+import { Search, FileText, Edit, Eye, Upload, FileIcon } from 'lucide-react';
 import { ContractType, Currency } from '@/types';
 
 const contractTypes: ContractType[] = [
@@ -27,6 +26,8 @@ const Contracts: React.FC = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [editingContract, setEditingContract] = useState<string | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [viewDocumentUrl, setViewDocumentUrl] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     lawFirmId: '',
     serviceType: 'Consultivo' as ContractType,
@@ -35,6 +36,7 @@ const Contracts: React.FC = () => {
     startDate: '',
     endDate: '',
     department: '',
+    attachmentUrl: '',
   });
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -49,6 +51,12 @@ const Contracts: React.FC = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      setFile(e.target.files[0]);
+    }
+  };
+
   const handleAddButtonClick = () => {
     setFormData({
       lawFirmId: '',
@@ -58,7 +66,9 @@ const Contracts: React.FC = () => {
       startDate: new Date().toISOString().split('T')[0],
       endDate: '',
       department: '',
+      attachmentUrl: '',
     });
+    setFile(null);
     setEditingContract(null);
     setIsDialogOpen(true);
   };
@@ -66,7 +76,11 @@ const Contracts: React.FC = () => {
   const handleEditButtonClick = (id: string) => {
     const contract = contracts.find((contract) => contract.id === id);
     if (contract) {
-      setFormData({ ...contract });
+      setFormData({ 
+        ...contract, 
+        attachmentUrl: contract.attachmentUrl || '' 
+      });
+      setFile(null);
       setEditingContract(id);
       setIsDialogOpen(true);
     }
@@ -74,12 +88,32 @@ const Contracts: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // For demo purposes, we're creating a fake URL for the uploaded file
+    // In a real application, you would upload to a server/storage and get the URL
+    let attachmentUrl = formData.attachmentUrl;
+    if (file) {
+      // Create a fake URL for demonstration
+      attachmentUrl = `https://example.com/files/${file.name}`;
+    }
+
+    const updatedFormData = {
+      ...formData,
+      attachmentUrl: attachmentUrl || undefined
+    };
+
     if (editingContract) {
-      updateContract(editingContract, formData);
+      updateContract(editingContract, updatedFormData);
     } else {
-      addContract(formData);
+      addContract(updatedFormData);
     }
     setIsDialogOpen(false);
+  };
+
+  const handleViewAttachment = (url: string | undefined) => {
+    if (url) {
+      setViewDocumentUrl(url);
+    }
   };
 
   const activeLawFirms = lawFirms.filter(firm => firm.status === 'ativo');
@@ -95,6 +129,44 @@ const Contracts: React.FC = () => {
       contract.department.toLowerCase().includes(searchTerm.toLowerCase())
     );
   });
+
+  // Function to determine document type and display appropriately
+  const getDocumentDisplay = () => {
+    if (!viewDocumentUrl) return null;
+    
+    const isImage = viewDocumentUrl.match(/\.(jpeg|jpg|gif|png)$/i);
+    const isPdf = viewDocumentUrl.match(/\.(pdf)$/i);
+    
+    if (isImage) {
+      return <img src={viewDocumentUrl} alt="Documento" className="max-w-full max-h-[70vh]" />;
+    } else if (isPdf) {
+      return (
+        <iframe 
+          src={`${viewDocumentUrl}#toolbar=0`} 
+          className="w-full h-[70vh]"
+          title="PDF Document"
+        />
+      );
+    } else {
+      // For other types, provide a link
+      return (
+        <div className="text-center py-10">
+          <FileIcon className="mx-auto h-16 w-16 text-muted-foreground" />
+          <div className="mt-4">
+            <p>Tipo de arquivo não suportado para visualização.</p>
+            <a 
+              href={viewDocumentUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-primary hover:underline mt-2 inline-block"
+            >
+              Abrir arquivo em nova aba
+            </a>
+          </div>
+        </div>
+      );
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -162,9 +234,24 @@ const Contracts: React.FC = () => {
                         <td className="py-3 px-4">{formatDate(contract.endDate)}</td>
                         <td className="py-3 px-4">{contract.department}</td>
                         <td className="py-3 px-4 text-right">
-                          <Button variant="ghost" size="sm" onClick={() => handleEditButtonClick(contract.id)}>
-                            <Edit className="h-4 w-4" />
-                          </Button>
+                          <div className="flex justify-end gap-2">
+                            {contract.attachmentUrl && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm" 
+                                onClick={() => handleViewAttachment(contract.attachmentUrl)}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => handleEditButtonClick(contract.id)}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     );
@@ -176,6 +263,7 @@ const Contracts: React.FC = () => {
         </CardContent>
       </Card>
 
+      {/* Contract Form Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -201,6 +289,8 @@ const Contracts: React.FC = () => {
                   </SelectContent>
                 </Select>
               </div>
+              
+              {/* Keep existing fields */}
               <div className="grid gap-2">
                 <Label htmlFor="serviceType">Tipo de Serviço</Label>
                 <Select
@@ -278,7 +368,36 @@ const Contracts: React.FC = () => {
                   required
                 />
               </div>
+              
+              {/* Add file attachment field */}
+              <div className="grid gap-2">
+                <Label htmlFor="attachment">Anexo (opcional)</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="attachment"
+                    type="file"
+                    onChange={handleFileChange}
+                    className="flex-1"
+                  />
+                  {formData.attachmentUrl && !file && (
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleViewAttachment(formData.attachmentUrl)}
+                    >
+                      <Eye className="h-4 w-4" /> Ver
+                    </Button>
+                  )}
+                </div>
+                {file && (
+                  <p className="text-xs text-muted-foreground">
+                    Arquivo selecionado: {file.name}
+                  </p>
+                )}
+              </div>
             </div>
+            
             <DialogFooter>
               <Button variant="outline" type="button" onClick={() => setIsDialogOpen(false)}>
                 Cancelar
@@ -288,6 +407,29 @@ const Contracts: React.FC = () => {
               </Button>
             </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Document Viewer Dialog */}
+      <Dialog open={!!viewDocumentUrl} onOpenChange={(open) => !open && setViewDocumentUrl(null)}>
+        <DialogContent className="sm:max-w-[800px] sm:max-h-[80vh]">
+          <DialogHeader>
+            <DialogTitle>Visualizar Anexo</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            {getDocumentDisplay()}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setViewDocumentUrl(null)}>
+              Fechar
+            </Button>
+            <Button 
+              variant="default" 
+              onClick={() => window.open(viewDocumentUrl, '_blank')}
+            >
+              Abrir em Nova Aba
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

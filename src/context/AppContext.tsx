@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState } from 'react';
 import { LawFirm, Contract, Invoice, Currency } from '@/types';
 import { mockLawFirms, mockContracts, mockInvoices } from '@/data/mockData';
@@ -28,7 +29,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Update initial state to include currency in mockData
   const [lawFirms, setLawFirms] = useState<LawFirm[]>(mockLawFirms);
   const [contracts, setContracts] = useState<Contract[]>(
-    mockContracts.map(contract => ({ ...contract, currency: contract.currency || 'BRL' }))
+    mockContracts.map(contract => ({ 
+      ...contract, 
+      currency: contract.currency || 'BRL',
+      attachmentUrl: contract.attachmentUrl 
+    }))
   );
   const [invoices, setInvoices] = useState<Invoice[]>(
     mockInvoices.map(invoice => ({ ...invoice, currency: invoice.currency || 'BRL' }))

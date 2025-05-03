@@ -39,6 +39,7 @@ export interface Contract {
   startDate: string;
   endDate: string;
   department: string;
+  attachmentUrl?: string; // Optional attachment URL
 }
 
 export type InvoiceStatus = 'pendente' | 'em análise' | 'pago';
