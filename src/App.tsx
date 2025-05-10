@@ -11,6 +11,7 @@ import Invoices from "./pages/Invoices";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
+import Register from "./pages/Register";
 import AppLayout from "./components/layout/AppLayout";
 import { AppProvider } from './context/AppContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -42,6 +43,7 @@ const App = () => (
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
             <Route path="/*" element={
               <ProtectedRoute element={
                 <AppProvider>

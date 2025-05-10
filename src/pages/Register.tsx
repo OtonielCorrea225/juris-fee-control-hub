@@ -15,39 +15,49 @@ import {
   FormMessage 
 } from '@/components/ui/form';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
 import { Navigate, Link } from 'react-router-dom';
 import { useState } from 'react';
 
-const loginSchema = z.object({
+const registerSchema = z.object({
+  name: z.string().min(1, 'Nome é obrigatório'),
   email: z.string().email('E-mail inválido'),
   password: z.string().min(6, 'A senha deve ter pelo menos 6 caracteres'),
+  confirmPassword: z.string().min(6, 'A confirmação de senha é obrigatória'),
+}).refine((data) => data.password === data.confirmPassword, {
+  message: "As senhas não coincidem",
+  path: ["confirmPassword"],
 });
 
-type LoginFormValues = z.infer<typeof loginSchema>;
+type RegisterFormValues = z.infer<typeof registerSchema>;
 
-const Login: React.FC = () => {
-  const { login, isAuthenticated, isLoading } = useAuth();
+const Register: React.FC = () => {
+  const { register, isAuthenticated, isLoading } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   
-  const form = useForm<LoginFormValues>({
-    resolver: zodResolver(loginSchema),
+  const form = useForm<RegisterFormValues>({
+    resolver: zodResolver(registerSchema),
     defaultValues: {
+      name: '',
       email: '',
       password: '',
+      confirmPassword: '',
     },
   });
 
-  const onSubmit = async (values: LoginFormValues) => {
+  const onSubmit = async (values: RegisterFormValues) => {
     setIsSubmitting(true);
     try {
-      await login({
+      await register({
+        name: values.name,
         email: values.email,
         password: values.password,
       });
+      // Redirect will happen in the useEffect
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error('Registration failed:', error);
     } finally {
       setIsSubmitting(false);
     }
@@ -60,6 +70,10 @@ const Login: React.FC = () => {
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
+  };
+
+  const toggleConfirmPasswordVisibility = () => {
+    setShowConfirmPassword(!showConfirmPassword);
   };
 
   return (
@@ -75,13 +89,34 @@ const Login: React.FC = () => {
         
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-xl">Acesso ao sistema</CardTitle>
-            <CardDescription>Entre com suas credenciais para acessar</CardDescription>
+            <CardTitle className="text-xl">Criar conta</CardTitle>
+            <CardDescription>Preencha os dados para se cadastrar</CardDescription>
           </CardHeader>
           
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Nome</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            placeholder="Seu nome completo" 
+                            className="pl-10" 
+                            {...field} 
+                          />
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name="email"
@@ -137,13 +172,48 @@ const Login: React.FC = () => {
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirmar senha</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                          <Input 
+                            type={showConfirmPassword ? "text" : "password"} 
+                            placeholder="••••••" 
+                            className="pl-10" 
+                            {...field} 
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-1/2 transform -translate-y-1/2"
+                            onClick={toggleConfirmPasswordVisibility}
+                          >
+                            {showConfirmPassword ? (
+                              <EyeOff className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <Eye className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </Button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
                 
                 <Button 
                   type="submit" 
                   className="w-full mt-6" 
                   disabled={isSubmitting}
                 >
-                  {isSubmitting ? "Entrando..." : "Entrar"}
+                  {isSubmitting ? "Cadastrando..." : "Cadastrar"}
                 </Button>
               </form>
             </Form>
@@ -151,10 +221,10 @@ const Login: React.FC = () => {
           
           <CardFooter className="text-sm text-center flex justify-center flex-col gap-2">
             <div className="text-muted-foreground">
-              Não tem uma conta ainda?
+              Já tem uma conta?
             </div>
-            <Link to="/register" className="text-primary font-medium">
-              Cadastre-se
+            <Link to="/login" className="text-primary font-medium">
+              Faça login
             </Link>
           </CardFooter>
         </Card>
@@ -163,4 +233,4 @@ const Login: React.FC = () => {
   );
 };
 
-export default Login;
+export default Register;
