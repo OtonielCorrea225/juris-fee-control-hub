@@ -39,7 +39,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      <BrowserRouter basename="/juris-fee-control-hub">
         <AuthProvider>
           <Routes>
             <Route path="/login" element={<Login />} />
